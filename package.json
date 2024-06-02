@@ -11,7 +11,7 @@
     "prestart": "npm run build",
     "vercel-build": "npx prisma generate && npx prisma migrate deploy"
   },
-  "keywords": [],
+  "keywords": ["habit", "tracker"],
   "author": "",
   "license": "ISC",
   "dependencies": {
