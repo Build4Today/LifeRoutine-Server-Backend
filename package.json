@@ -11,13 +11,17 @@
     "prestart": "npm run build",
     "vercel-build": "npx prisma generate && npx prisma migrate deploy"
   },
-  "keywords": ["habit", "tracker"],
+  "keywords": [
+    "habit",
+    "tracker"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
     "@fastify/cors": "^9.0.1",
     "@prisma/client": "^4.8.1",
     "dayjs": "^1.11.7",
+    "dotenv": "^16.4.5",
     "fastify": "^4.11.0",
     "zod": "^3.20.2"
   },
