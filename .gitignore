@@ -5,6 +5,9 @@ prisma/ERD.svg
 # Keep environment variables out of version control
 .env
 
+# SQLite Database
+prisma/liferoutine.db
+
 # IDE
 .vscode
 .idea
