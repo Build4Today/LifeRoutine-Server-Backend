@@ -9,12 +9,12 @@ export async function appRoutes(app: FastifyInstance) {
   app.post("/habits", async (request) => {
     logger.info("Creating habit");
 
-    const createHabitBody = z.object({
+    const createHabitBodySchema = z.object({
       title: z.string(),
       weekDays: z.array(z.number().min(0).max(6)),
     });
 
-    const { title, weekDays } = createHabitBody.parse(request.body);
+    const { title, weekDays } = createHabitBodySchema.parse(request.body);
 
     const today = dayjs().startOf("day").toDate();
 
@@ -154,6 +154,6 @@ export async function appRoutes(app: FastifyInstance) {
       FROM days D
     `;
 
-        return summary;
-    });
+    return summary;
+  });
 }
