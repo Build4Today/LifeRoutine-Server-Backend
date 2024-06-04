@@ -1,142 +1,170 @@
 import dayjs from "dayjs";
 import { FastifyInstance } from "fastify";
 import { z } from "zod";
-import { prisma } from "./lib/prisma";
+import { prisma } from "./prisma";
 
 import { logger } from "./logger";
 
-export async function appRoutes(app: FastifyInstance) {
-  app.post("/habits", async (request) => {
-    logger.info("Creating habit");
+import { createZodMiddleware } from "./utils/zod-middleware";
 
-    const createHabitBodySchema = z.object({
+interface CreateHabitBody {
+  title: string;
+  weekDays: number[];
+}
+
+export async function appRoutes(app: FastifyInstance) {
+  const habitsBodyMiddleware = createZodMiddleware(
+    z.object({
       title: z.string(),
       weekDays: z.array(z.number().min(0).max(6)),
-    });
+    })
+  );
 
-    const { title, weekDays } = createHabitBodySchema.parse(request.body);
-
-    const today = dayjs().startOf("day").toDate();
-
-    await prisma.habit.create({
-      data: {
-        title,
-        created_at: today,
-        weekDays: {
-          create: weekDays.map((weekDay) => {
-            return {
-              week_day: weekDay,
-            };
-          }),
-        },
-      },
-    });
-  });
-
-  app.get("/day", async (request) => {
-    logger.info("Getting day habits");
-
-    const getDayParams = z.object({
-      date: z.coerce.date(),
-    });
-
-    const { date } = getDayParams.parse(request.query);
-
-    const parsedDate = dayjs(date).startOf("day");
-    const weekDay = parsedDate.get("day");
-
-    const possibleHabits = await prisma.habit.findMany({
-      where: {
-        created_at: {
-          lte: date,
-        },
-        weekDays: {
-          some: {
-            week_day: weekDay,
+  app.post(
+    "/habits",
+    { preHandler: habitsBodyMiddleware },
+    async (request, reply) => {
+      logger.info("Creating habit");
+      try {
+        const { title, weekDays } = request.body as CreateHabitBody;
+        const today = dayjs().startOf("day").toDate();
+        await prisma.habit.create({
+          data: {
+            title,
+            created_at: today,
+            weekDays: {
+              create: weekDays.map((weekDay) => {
+                return {
+                  week_day: weekDay,
+                };
+              }),
+            },
           },
-        },
-      },
-    });
+        });
 
-    const day = await prisma.day.findFirst({
-      where: {
-        date: parsedDate.toDate(),
-      },
-      include: {
-        dayHabits: true,
-      },
-    });
+        reply.status(201).send({ message: "Habit created" });
+      } catch (error) {
+        logger.error(error);
+        reply.status(500).send({ error: "Internal Server Error" });
+      }
+    }
+  );
 
-    const completedHabits =
-      day?.dayHabits.map((dayHabit) => {
-        return dayHabit.habit_id;
-      }) ?? [];
+  // Create middleware for '/day' route
+  const getDayParamsMiddleware = createZodMiddleware(
+    z.object({
+      date: z.coerce.date(),
+    })
+  );
 
-    return {
-      possibleHabits,
-      completedHabits,
-    };
-  });
+  app.get(
+    "/day",
+    { preHandler: getDayParamsMiddleware },
+    async (request, reply) => {
+      logger.info("Getting day habits");
+      try {
+        const { date } = request.body as { date: Date };
 
-  app.patch("/habits/:id/toggle", async (request) => {
-    logger.info("Toggling habit");
+        const parsedDate = dayjs(date).startOf("day");
+        const weekDay = parsedDate.get("day");
+        const possibleHabits = await prisma.habit.findMany({
+          where: {
+            created_at: {
+              lte: date,
+            },
+            weekDays: {
+              some: {
+                week_day: weekDay,
+              },
+            },
+          },
+        });
+        const day = await prisma.day.findFirst({
+          where: {
+            date: parsedDate.toDate(),
+          },
+          include: {
+            dayHabits: true,
+          },
+        });
+        const completedHabits =
+          day?.dayHabits.map((dayHabit) => {
+            return dayHabit.habit_id;
+          }) ?? [];
+        return {
+          possibleHabits,
+          completedHabits,
+        };
+      } catch (error) {
+        reply.status(500).send({ error: "Internal Server Error" });
+      }
+    }
+  );
 
-    const toggleHabitParams = z.object({
+  // Create middleware for '/habits/:id/toggle' route
+  const toggleHabitParamsMiddleware = createZodMiddleware(
+    z.object({
       id: z.string().uuid(),
-    });
+    })
+  );
 
-    const { id } = toggleHabitParams.parse(request.params);
+  app.patch(
+    "/habits/:id/toggle",
+    { preHandler: toggleHabitParamsMiddleware },
+    async (request, reply) => {
+      logger.info("Toggling habit");
+      try {
+        const { id } = request.body as { id: string };
 
-    const today = dayjs().startOf("day").toDate();
-
-    let day = await prisma.day.findUnique({
-      where: {
-        date: today,
-      },
-    });
-
-    if (!day) {
-      day = await prisma.day.create({
-        data: {
-          date: today,
-        },
-      });
+        const today = dayjs().startOf("day").toDate();
+        let day = await prisma.day.findUnique({
+          where: {
+            date: today,
+          },
+        });
+        if (!day) {
+          day = await prisma.day.create({
+            data: {
+              date: today,
+            },
+          });
+        }
+        const dayHabit = await prisma.dayHabit.findUnique({
+          where: {
+            day_id_habit_id: {
+              day_id: day.id,
+              habit_id: id,
+            },
+          },
+        });
+        if (dayHabit) {
+          await prisma.dayHabit.delete({
+            where: {
+              id: dayHabit.id,
+            },
+          });
+        } else {
+          await prisma.dayHabit.create({
+            data: {
+              day_id: day.id,
+              habit_id: id,
+            },
+          });
+        }
+      } catch (error) {
+        reply.status(500).send({ error: "Internal Server Error" });
+      }
     }
-
-    const dayHabit = await prisma.dayHabit.findUnique({
-      where: {
-        day_id_habit_id: {
-          day_id: day.id,
-          habit_id: id,
-        },
-      },
-    });
-
-    if (dayHabit) {
-      await prisma.dayHabit.delete({
-        where: {
-          id: dayHabit.id,
-        },
-      });
-    } else {
-      await prisma.dayHabit.create({
-        data: {
-          day_id: day.id,
-          habit_id: id,
-        },
-      });
-    }
-  });
+  );
 
   app.get("/summary", async () => {
     logger.info("Getting summary");
-
     const summary = await prisma.$queryRaw`
-      SELECT 
-        D.id, 
+      SELECT
+        D.id,
         D.date,
         (
-          SELECT 
+          SELECT
             cast(count(*) as float)
           FROM day_habits DH
           WHERE DH.day_id = D.id
@@ -153,7 +181,6 @@ export async function appRoutes(app: FastifyInstance) {
         ) as amount
       FROM days D
     `;
-
     return summary;
   });
 }
