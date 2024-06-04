@@ -13,6 +13,10 @@ interface CreateHabitBody {
 }
 
 export async function appRoutes(app: FastifyInstance) {
+  app.get("/ping", (request, reply) => {
+    reply.status(200).send("Pong");
+  });
+
   const habitsBodyMiddleware = createZodMiddleware(
     z.object({
       title: z.string().min(1).max(40),
