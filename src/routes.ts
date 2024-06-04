@@ -15,7 +15,7 @@ interface CreateHabitBody {
 export async function appRoutes(app: FastifyInstance) {
   const habitsBodyMiddleware = createZodMiddleware(
     z.object({
-      title: z.string(),
+      title: z.string().min(1).max(40),
       weekDays: z.array(z.number().min(0).max(6)),
     })
   );
