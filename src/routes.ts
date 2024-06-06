@@ -10,6 +10,21 @@ import { createZodMiddleware } from "./utils/zod-middleware";
 interface CreateHabitBody {
   title: string;
   weekDays: number[];
+  deviceId: string;
+}
+
+interface GetDayBody {
+  date: Date;
+  deviceId: string;
+}
+
+interface ToggleHabitBody {
+  id: string;
+  deviceId: string;
+}
+
+interface GetSummaryQuery {
+  deviceId: string;
 }
 
 export async function appRoutes(app: FastifyInstance) {
@@ -21,6 +36,7 @@ export async function appRoutes(app: FastifyInstance) {
     z.object({
       title: z.string().min(1).max(40),
       weekDays: z.array(z.number().min(0).max(6)),
+      deviceId: z.string(),
     })
   );
 
@@ -30,7 +46,7 @@ export async function appRoutes(app: FastifyInstance) {
     async (request, reply) => {
       logger.info("Creating habit");
       try {
-        const { title, weekDays } = request.body as CreateHabitBody;
+        const { title, weekDays, deviceId } = request.body as CreateHabitBody;
         const today = dayjs().startOf("day").toDate();
         await prisma.habit.create({
           data: {
@@ -43,6 +59,7 @@ export async function appRoutes(app: FastifyInstance) {
                 };
               }),
             },
+            deviceId,
           },
         });
 
@@ -58,6 +75,7 @@ export async function appRoutes(app: FastifyInstance) {
   const getDayParamsMiddleware = createZodMiddleware(
     z.object({
       date: z.coerce.date(),
+      deviceId: z.string(),
     })
   );
 
@@ -67,7 +85,7 @@ export async function appRoutes(app: FastifyInstance) {
     async (request, reply) => {
       logger.info("Getting day habits");
       try {
-        const { date } = request.body as { date: Date };
+        const { date, deviceId } = request.body as GetDayBody;
 
         const parsedDate = dayjs(date).startOf("day");
         const weekDay = parsedDate.get("day");
@@ -81,11 +99,13 @@ export async function appRoutes(app: FastifyInstance) {
                 week_day: weekDay,
               },
             },
+            deviceId,
           },
         });
         const day = await prisma.day.findFirst({
           where: {
             date: parsedDate.toDate(),
+            deviceId,
           },
           include: {
             dayHabits: true,
@@ -109,6 +129,7 @@ export async function appRoutes(app: FastifyInstance) {
   const toggleHabitParamsMiddleware = createZodMiddleware(
     z.object({
       id: z.string().uuid(),
+      deviceId: z.string(),
     })
   );
 
@@ -118,26 +139,31 @@ export async function appRoutes(app: FastifyInstance) {
     async (request, reply) => {
       logger.info("Toggling habit");
       try {
-        const { id } = request.body as { id: string };
+        const { id, deviceId } = request.body as ToggleHabitBody;
 
         const today = dayjs().startOf("day").toDate();
         let day = await prisma.day.findUnique({
           where: {
-            date: today,
+            date_deviceId: {
+              date: today,
+              deviceId,
+            },
           },
         });
         if (!day) {
           day = await prisma.day.create({
             data: {
               date: today,
+              deviceId,
             },
           });
         }
         const dayHabit = await prisma.dayHabit.findUnique({
           where: {
-            day_id_habit_id: {
+            day_id_habit_id_deviceId: {
               day_id: day.id,
               habit_id: id,
+              deviceId,
             },
           },
         });
@@ -152,6 +178,7 @@ export async function appRoutes(app: FastifyInstance) {
             data: {
               day_id: day.id,
               habit_id: id,
+              deviceId,
             },
           });
         }
@@ -161,8 +188,9 @@ export async function appRoutes(app: FastifyInstance) {
     }
   );
 
-  app.get("/summary", async () => {
+  app.get("/summary", async (request) => {
     logger.info("Getting summary");
+    const { deviceId } = request.query as GetSummaryQuery;
     const summary = await prisma.$queryRaw`
       SELECT
         D.id,
@@ -182,8 +210,10 @@ export async function appRoutes(app: FastifyInstance) {
           WHERE
             HDW.week_day = cast(strftime('%w', D.date/1000.0, 'unixepoch') as int)
             AND H.created_at <= D.date
+            AND H.deviceId = ${deviceId}
         ) as amount
       FROM days D
+      WHERE D.deviceId = ${deviceId}
     `;
     return summary;
   });
