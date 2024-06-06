@@ -150,6 +150,7 @@ export async function appRoutes(app: FastifyInstance) {
             },
           },
         });
+
         if (!day) {
           day = await prisma.day.create({
             data: {
@@ -158,6 +159,7 @@ export async function appRoutes(app: FastifyInstance) {
             },
           });
         }
+
         const dayHabit = await prisma.dayHabit.findUnique({
           where: {
             day_id_habit_id_deviceId: {
@@ -167,6 +169,7 @@ export async function appRoutes(app: FastifyInstance) {
             },
           },
         });
+
         if (dayHabit) {
           await prisma.dayHabit.delete({
             where: {
@@ -190,6 +193,7 @@ export async function appRoutes(app: FastifyInstance) {
 
   app.get("/summary", async (request) => {
     logger.info("Getting summary");
+
     const { deviceId } = request.query as GetSummaryQuery;
     const summary = await prisma.$queryRaw`
       SELECT
