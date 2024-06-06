@@ -3,19 +3,26 @@
 The Life Routine backend built with [Fastify](https://github.com/fastify/fastify) and [Prisma](https://github.com/prisma/prisma) ORM for handling database operations. This API allows the React Native app (client) to create, update, and track users habits on a daily basis.
 
 
-### Get Started
+## Get Started
 
-#### Install dependencies
+### Install dependencies
 
 ```console
-  npm i
+npm i
 ```
 
 Start the server
 
 ```console
-  npm run start
+npm run start
 ```
+
+### Database Migration
+
+```console
+npx prisma generate
+```
+
 
 ## Author
 
