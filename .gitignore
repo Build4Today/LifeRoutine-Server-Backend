@@ -1,12 +1,12 @@
 node_modules
 dist
-prisma/ERD.svg
 
 # Keep environment variables out of version control
 .env
 
-# SQLite Database
-prisma/liferoutine.db
+# SQLite Database / DB Journal files
+*.db
+*.db-journal
 
 # IDE
 .vscode
