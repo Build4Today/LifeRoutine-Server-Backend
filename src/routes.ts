@@ -1,6 +1,7 @@
 import dayjs from "dayjs";
 import { FastifyInstance } from "fastify";
 import { z } from "zod";
+import { StatusCodes } from "http-status-codes";
 
 import { prisma } from "./prisma";
 import { logger } from "./logger";
@@ -28,7 +29,7 @@ interface GetSummaryQuery {
 
 export async function appRoutes(app: FastifyInstance) {
   app.get("/ping", (request, reply) => {
-    reply.status(200).send("Pong");
+    reply.status(StatusCodes.OK).send("Pong");
   });
 
   const habitsBodyMiddleware = createZodMiddleware(
@@ -63,10 +64,12 @@ export async function appRoutes(app: FastifyInstance) {
           },
         });
 
-        reply.status(201).send({ message: "Habit created" });
+        reply.status(StatusCodes.CREATED).send({ message: "Habit created" });
       } catch (error) {
         logger.error(error);
-        reply.status(500).send({ error: "Internal Server Error" });
+        reply
+          .status(StatusCodes.INTERNAL_SERVER_ERROR)
+          .send({ error: "Internal Server Error" });
       }
     }
   );
@@ -120,7 +123,9 @@ export async function appRoutes(app: FastifyInstance) {
           completedHabits,
         };
       } catch (error) {
-        reply.status(500).send({ error: "Internal Server Error" });
+        reply
+          .status(StatusCodes.INTERNAL_SERVER_ERROR)
+          .send({ error: "Internal Server Error" });
       }
     }
   );
@@ -186,7 +191,9 @@ export async function appRoutes(app: FastifyInstance) {
           });
         }
       } catch (error) {
-        reply.status(500).send({ error: "Internal Server Error" });
+        reply
+          .status(StatusCodes.INTERNAL_SERVER_ERROR)
+          .send({ error: "Internal Server Error" });
       }
     }
   );
