@@ -130,6 +130,7 @@ export async function appRoutes(app: FastifyInstance) {
     { preHandler: getDayParamsMiddleware },
     async (request, reply) => {
       logger.info("Getting day habits");
+
       try {
         const { date, deviceId } = request.body as GetDayBody;
 
