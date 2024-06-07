@@ -57,9 +57,11 @@ model DayHabit {
 }
 
 model Device {
-  id     String @id @default(uuid())
-  habits Habit[]
-  days   Day[]
+  id         String @id @default(uuid())
+  createdAt  DateTime         @map("created_at")
+  updatedAt  DateTime         @map("updated_at")
+  habits     Habit[]
+  days       Day[]
 
   @@map("device")
 }
