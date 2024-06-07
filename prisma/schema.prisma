@@ -17,14 +17,14 @@ model Habit {
   createdAt  DateTime         @map("created_at")
   dayHabits  DayHabit[]
   weekDays   HabitWeekDays[]
-  deviceId   String
+  deviceId   String           @map("device_id")
   device     Device           @relation(fields: [deviceId], references: [id])
 
   @@map("habits")
 }
 
 model HabitWeekDays {
-  id         String @id @default(uuid())
+  id         String  @id @default(uuid())
   habitId    String  @map("habit_id")
   weekDay    Int     @map("week_day")
   habit      Habit   @relation(fields: [habitId], references: [id])
@@ -37,7 +37,7 @@ model Day {
   id        String     @id @default(uuid())
   date      DateTime
   dayHabits DayHabit[]
-  deviceId  String
+  deviceId  String     @map("device_id")
   device    Device     @relation(fields: [deviceId], references: [id])
 
   @@unique([date, deviceId])
@@ -45,12 +45,12 @@ model Day {
 }
 
 model DayHabit {
-  id       String   @id @default(uuid())
-  dayId    String   @map("day_id")
-  habitId  String   @map("habit_id")
-  deviceId String
-  day      Day      @relation(fields: [dayId], references: [id])
-  habit    Habit    @relation(fields: [habitId], references: [id])
+  id        String   @id @default(uuid())
+  dayId     String   @map("day_id")
+  habitId   String   @map("habit_id")
+  deviceId  String   @map("device_id")
+  day       Day      @relation(fields: [dayId], references: [id])
+  habit     Habit    @relation(fields: [habitId], references: [id])
 
   @@unique([dayId, habitId, deviceId])
   @@map("day_habits")

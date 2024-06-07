@@ -1,10 +1,9 @@
 import dayjs from "dayjs";
 import { FastifyInstance } from "fastify";
 import { z } from "zod";
+
 import { prisma } from "./prisma";
-
 import { logger } from "./logger";
-
 import { createZodMiddleware } from "./utils/zod-middleware";
 
 interface CreateHabitBody {
@@ -48,14 +47,15 @@ export async function appRoutes(app: FastifyInstance) {
       try {
         const { title, weekDays, deviceId } = request.body as CreateHabitBody;
         const today = dayjs().startOf("day").toDate();
+
         await prisma.habit.create({
           data: {
             title,
-            created_at: today,
+            createdAt: today,
             weekDays: {
               create: weekDays.map((weekDay) => {
                 return {
-                  week_day: weekDay,
+                  weekDay,
                 };
               }),
             },
@@ -91,12 +91,12 @@ export async function appRoutes(app: FastifyInstance) {
         const weekDay = parsedDate.get("day");
         const possibleHabits = await prisma.habit.findMany({
           where: {
-            created_at: {
+            createdAt: {
               lte: date,
             },
             weekDays: {
               some: {
-                week_day: weekDay,
+                weekDay: weekDay,
               },
             },
             deviceId,
@@ -113,7 +113,7 @@ export async function appRoutes(app: FastifyInstance) {
         });
         const completedHabits =
           day?.dayHabits.map((dayHabit) => {
-            return dayHabit.habit_id;
+            return dayHabit.habitId;
           }) ?? [];
         return {
           possibleHabits,
@@ -162,9 +162,9 @@ export async function appRoutes(app: FastifyInstance) {
 
         const dayHabit = await prisma.dayHabit.findUnique({
           where: {
-            day_id_habit_id_deviceId: {
-              day_id: day.id,
-              habit_id: id,
+            dayId_habitId_deviceId: {
+              dayId: day.id,
+              habitId: id,
               deviceId,
             },
           },
@@ -179,8 +179,8 @@ export async function appRoutes(app: FastifyInstance) {
         } else {
           await prisma.dayHabit.create({
             data: {
-              day_id: day.id,
-              habit_id: id,
+              dayId: day.id,
+              habitId: id,
               deviceId,
             },
           });
@@ -214,10 +214,10 @@ export async function appRoutes(app: FastifyInstance) {
           WHERE
             HDW.week_day = cast(strftime('%w', D.date/1000.0, 'unixepoch') as int)
             AND H.created_at <= D.date
-            AND H.deviceId = ${deviceId}
+            AND H.device_id = ${deviceId}
         ) as amount
       FROM days D
-      WHERE D.deviceId = ${deviceId}
+      WHERE D.device_id = ${deviceId}
     `;
     return summary;
   });
