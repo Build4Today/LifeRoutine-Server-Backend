@@ -40,11 +40,54 @@ export async function appRoutes(app: FastifyInstance) {
     })
   );
 
+  app.post("/device", async (request, reply) => {
+    logger.info("Creating or updating device");
+
+    try {
+      const { deviceId } = request.body as { deviceId: string };
+
+      const device = await prisma.device.findUnique({
+        where: {
+          id: deviceId,
+        },
+      });
+
+      if (!device) {
+        await prisma.device.create({
+          data: {
+            id: deviceId,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+        });
+      } else {
+        await prisma.device.update({
+          where: {
+            id: deviceId,
+          },
+          data: {
+            updatedAt: new Date(),
+          },
+        });
+      }
+
+      reply
+        .status(StatusCodes.OK)
+        .send({ message: "Device created or updated" });
+    } catch (error) {
+      logger.error(error);
+      reply
+        .status(StatusCodes.INTERNAL_SERVER_ERROR)
+        .send({ error: "Internal Server Error" });
+    }
+  });
+
   app.post(
     "/habits",
     { preHandler: habitsBodyMiddleware },
     async (request, reply) => {
       logger.info("Creating habit");
+
       try {
         const { title, weekDays, deviceId } = request.body as CreateHabitBody;
         const today = dayjs().startOf("day").toDate();
