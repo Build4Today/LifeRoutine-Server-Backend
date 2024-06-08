@@ -32,6 +32,60 @@ export async function appRoutes(app: FastifyInstance) {
     reply.status(StatusCodes.OK).send("Pong");
   });
 
+  // Create/update a device for '/device' route
+  const deviceBodyMiddleware = createZodMiddleware(
+    z.object({
+      deviceId: z.string().min(1),
+    })
+  );
+
+  app.post(
+    "/device",
+    { preHandler: deviceBodyMiddleware },
+    async (request, reply) => {
+      logger.info("Creating or updating device");
+
+      try {
+        const { deviceId } = request.body as { deviceId: string };
+
+        const device = await prisma.device.findUnique({
+          where: {
+            id: deviceId,
+          },
+        });
+
+        if (!device) {
+          await prisma.device.create({
+            data: {
+              id: deviceId,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            },
+          });
+
+          reply.status(StatusCodes.OK).send({ message: "Device created" });
+        } else {
+          await prisma.device.update({
+            where: {
+              id: deviceId,
+            },
+            data: {
+              updatedAt: new Date(),
+            },
+          });
+
+          reply.status(StatusCodes.OK).send({ message: `${deviceId} updated` });
+        }
+      } catch (error) {
+        logger.error(error);
+        reply
+          .status(StatusCodes.FORBIDDEN)
+          .send({ error: "Cannot register the device" });
+      }
+    }
+  );
+
+  // Create habits for '/habits' route
   const habitsBodyMiddleware = createZodMiddleware(
     z.object({
       title: z.string().min(1).max(40),
@@ -39,48 +93,6 @@ export async function appRoutes(app: FastifyInstance) {
       deviceId: z.string(),
     })
   );
-
-  app.post("/device", async (request, reply) => {
-    logger.info("Creating or updating device");
-
-    try {
-      const { deviceId } = request.body as { deviceId: string };
-
-      const device = await prisma.device.findUnique({
-        where: {
-          id: deviceId,
-        },
-      });
-
-      if (!device) {
-        await prisma.device.create({
-          data: {
-            id: deviceId,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          },
-        });
-      } else {
-        await prisma.device.update({
-          where: {
-            id: deviceId,
-          },
-          data: {
-            updatedAt: new Date(),
-          },
-        });
-      }
-
-      reply
-        .status(StatusCodes.OK)
-        .send({ message: "Device created or updated" });
-    } catch (error) {
-      logger.error(error);
-      reply
-        .status(StatusCodes.INTERNAL_SERVER_ERROR)
-        .send({ error: "Internal Server Error" });
-    }
-  });
 
   app.post(
     "/habits",
