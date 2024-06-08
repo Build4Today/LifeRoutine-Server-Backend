@@ -8,6 +8,16 @@ dist
 *.db
 *.db-journal
 
+# Package manager - Yarn
+.pnp.*
+.yarnrc.yml
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+
 # IDE
 .vscode
 .idea
