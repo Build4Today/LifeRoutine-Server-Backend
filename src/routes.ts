@@ -74,7 +74,9 @@ export async function appRoutes(app: FastifyInstance) {
             },
           });
 
-          reply.status(StatusCodes.OK).send({ message: `${deviceId} updated` });
+          reply
+            .status(StatusCodes.OK)
+            .send({ message: `"${deviceId}" has been updated` });
         }
       } catch (error) {
         logger.error(error);
