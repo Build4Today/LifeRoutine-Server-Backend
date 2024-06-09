@@ -164,6 +164,7 @@ export async function appRoutes(app: FastifyInstance) {
             deviceId,
           },
         });
+
         const day = await prisma.day.findFirst({
           where: {
             date: parsedDate.toDate(),

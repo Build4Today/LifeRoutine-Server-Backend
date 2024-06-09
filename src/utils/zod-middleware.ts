@@ -12,6 +12,7 @@ export function createZodMiddleware(schema: AnyZodObject) {
     } catch (error) {
       if (error instanceof ZodError) {
         const formattedErrors = error.format();
+
         reply.status(400).send({
           error: formattedErrors,
         });
