@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "API for Life Routine React Native app",
   "scripts": {
-    "start": "node dist/server.js | npx pino-pretty",
+    "start": "ts-node src/server.ts --transpile-only | npx pino-pretty",
     "dev": "ts-node --watch --no-emit src/server.ts | npx pino-pretty",
     "build": "tsc",
     "prestart": "npm run build",
@@ -31,6 +31,7 @@
     "seed": "tsx prisma/seed.ts"
   },
   "devDependencies": {
+    "ts-node": "^10.9.2",
     "@mermaid-js/mermaid-cli": "^9.3.0",
     "prisma": "4.16.2",
     "prisma-erd-generator": "^1.2.5",

@@ -178,6 +178,7 @@ export async function appRoutes(app: FastifyInstance) {
           day?.dayHabits.map((dayHabit) => {
             return dayHabit.habitId;
           }) ?? [];
+
         return {
           possibleHabits,
           completedHabits,
