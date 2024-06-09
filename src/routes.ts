@@ -135,7 +135,7 @@ export async function appRoutes(app: FastifyInstance) {
   const getDayParamsMiddleware = createZodMiddleware(
     z.object({
       deviceId: z.string(),
-      date: z.number(),
+      date: z.date(),
     })
   );
 
