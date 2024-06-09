@@ -260,10 +260,18 @@ export async function appRoutes(app: FastifyInstance) {
     }
   );
 
-  app.get("/summary", async (request) => {
+  app.get("/summary", async (request, reply) => {
     logger.info("Getting summary");
 
     const { deviceId } = request.query as GetSummaryQuery;
+
+    if (!deviceId) {
+      reply.status(400).send({
+        error: "deviceId is required",
+      });
+      return;
+    }
+
     const summary = await prisma.$queryRaw`
       SELECT
         D.id,
