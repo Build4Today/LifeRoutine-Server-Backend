@@ -80,6 +80,7 @@ export async function appRoutes(app: FastifyInstance) {
         }
       } catch (error) {
         logger.error(error);
+
         reply
           .status(StatusCodes.FORBIDDEN)
           .send({ error: "Cannot register the device" });
@@ -124,6 +125,7 @@ export async function appRoutes(app: FastifyInstance) {
         reply.status(StatusCodes.CREATED).send({ message: "Habit created" });
       } catch (error) {
         logger.error(error);
+
         reply
           .status(StatusCodes.INTERNAL_SERVER_ERROR)
           .send({ error: "Internal Server Error" });
@@ -174,6 +176,7 @@ export async function appRoutes(app: FastifyInstance) {
             dayHabits: true,
           },
         });
+
         const completedHabits =
           day?.dayHabits.map((dayHabit) => {
             return dayHabit.habitId;
@@ -206,6 +209,7 @@ export async function appRoutes(app: FastifyInstance) {
     { preHandler: toggleHabitParamsMiddleware },
     async (request, reply) => {
       logger.info("Toggling habit");
+
       try {
         const { id, deviceId } = request.body as ToggleHabitBody;
 
@@ -297,6 +301,7 @@ export async function appRoutes(app: FastifyInstance) {
       FROM days D
       WHERE D.device_id = ${deviceId}
     `;
+
     return summary;
   });
 }
