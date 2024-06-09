@@ -191,7 +191,7 @@ export async function appRoutes(app: FastifyInstance) {
     }
   );
 
-  // Create middleware for '/habits/:id/toggle' route
+  // Create middleware for '/habits/toggle' route
   const toggleHabitParamsMiddleware = createZodMiddleware(
     z.object({
       id: z.string().uuid(),
@@ -200,7 +200,7 @@ export async function appRoutes(app: FastifyInstance) {
   );
 
   app.patch(
-    "/habits/:id/toggle",
+    "/habits/toggle",
     { preHandler: toggleHabitParamsMiddleware },
     async (request, reply) => {
       logger.info("Toggling habit");
