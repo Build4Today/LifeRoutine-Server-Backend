@@ -134,12 +134,12 @@ export async function appRoutes(app: FastifyInstance) {
   // Create middleware for '/day' route
   const getDayParamsMiddleware = createZodMiddleware(
     z.object({
-      date: z.coerce.date(),
       deviceId: z.string(),
+      date: z.number(),
     })
   );
 
-  app.get(
+  app.post(
     "/day",
     { preHandler: getDayParamsMiddleware },
     async (request, reply) => {
