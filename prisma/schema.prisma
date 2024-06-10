@@ -14,6 +14,7 @@ datasource db {
 model Habit {
   id         String           @id @default(uuid())
   title      String
+  streak     Int              @default(0)
   createdAt  DateTime         @map("created_at")
   dayHabits  DayHabit[]
   weekDays   HabitWeekDays[]

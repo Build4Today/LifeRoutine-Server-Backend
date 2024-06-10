@@ -27,6 +27,16 @@ interface GetSummaryQuery {
   deviceId: string;
 }
 
+interface DayInfoProps {
+  possibleHabits: {
+    id: string;
+    title: string;
+    streak: number;
+    progress: number[];
+  }[];
+  completedHabits: string[];
+}
+
 export async function appRoutes(app: FastifyInstance) {
   app.get("/ping", (request, reply) => {
     reply.status(StatusCodes.OK).send("Pong");
@@ -165,6 +175,21 @@ export async function appRoutes(app: FastifyInstance) {
             },
             deviceId,
           },
+          include: {
+            dayHabits: {
+              where: {
+                day: {
+                  date: {
+                    gte: parsedDate.subtract(7, "day").toDate(),
+                    lte: parsedDate.toDate(),
+                  },
+                },
+              },
+              include: {
+                day: true,
+              },
+            },
+          },
         });
 
         const day = await prisma.day.findFirst({
@@ -182,8 +207,22 @@ export async function appRoutes(app: FastifyInstance) {
             return dayHabit.habitId;
           }) ?? [];
 
+        const possibleHabitsWithProgress = possibleHabits.map((habit) => {
+          const progress = Array(7).fill(0);
+          habit.dayHabits.forEach((dayHabit) => {
+            const dayIndex = dayjs(dayHabit.day.date).diff(parsedDate, "day");
+            progress[dayIndex] = 1;
+          });
+          return {
+            id: habit.id,
+            title: habit.title,
+            streak: habit.streak,
+            progress,
+          };
+        });
+
         return {
-          possibleHabits,
+          possibleHabits: possibleHabitsWithProgress,
           completedHabits,
         };
       } catch (error) {
@@ -241,6 +280,28 @@ export async function appRoutes(app: FastifyInstance) {
             },
           },
         });
+
+        if (dayHabit) {
+          await prisma.habit.update({
+            where: {
+              id,
+            },
+            data: {
+              streak: {
+                increment: 1,
+              },
+            },
+          });
+        } else {
+          await prisma.habit.update({
+            where: {
+              id,
+            },
+            data: {
+              streak: 0,
+            },
+          });
+        }
 
         if (dayHabit) {
           await prisma.dayHabit.delete({
