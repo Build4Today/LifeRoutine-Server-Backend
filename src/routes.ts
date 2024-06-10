@@ -115,6 +115,7 @@ export async function appRoutes(app: FastifyInstance) {
 
       try {
         const { title, weekDays, deviceId } = request.body as CreateHabitBody;
+
         const today = dayjs().startOf("day").toDate();
 
         await prisma.habit.create({
