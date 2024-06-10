@@ -209,7 +209,7 @@ export async function appRoutes(app: FastifyInstance) {
 
         const possibleHabitsWithProgress = possibleHabits.map((habit) => {
           const progress = Array(7).fill(0);
-          habit.dayHabits.forEach((dayHabit) => {
+          habit.dayHabits.forEach((dayHabit: any) => {
             const dayIndex = dayjs(dayHabit.day.date).diff(parsedDate, "day");
             progress[dayIndex] = 1;
           });
