@@ -14,7 +14,7 @@ interface CreateHabitBody {
 }
 
 interface GetDayBody {
-  date: string;
+  date: Date;
   deviceId: string;
 }
 
@@ -148,7 +148,7 @@ export async function appRoutes(app: FastifyInstance) {
   const getDayParamsMiddleware = createZodMiddleware(
     z.object({
       deviceId: z.string(),
-      date: z.string(), // needs to be a date string
+      date: z.coerce.date(),
     })
   );
 
