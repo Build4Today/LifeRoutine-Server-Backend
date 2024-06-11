@@ -14,7 +14,7 @@ interface CreateHabitBody {
 }
 
 interface GetDayBody {
-  date: Date;
+  date: string;
   deviceId: string;
 }
 
@@ -144,11 +144,11 @@ export async function appRoutes(app: FastifyInstance) {
     }
   );
 
-  // Create middleware for '/day' route
+  // Create middleware validation for '/day' route
   const getDayParamsMiddleware = createZodMiddleware(
     z.object({
       deviceId: z.string(),
-      date: z.date(),
+      date: z.string(), // needs to be a date string
     })
   );
 
@@ -161,7 +161,9 @@ export async function appRoutes(app: FastifyInstance) {
       try {
         const { date, deviceId } = request.body as GetDayBody;
 
-        const parsedDate = dayjs(date).startOf("day");
+        logger.info(`Date: ${date}, DeviceId: ${deviceId}`);
+
+        const parsedDate = dayjs.utc(date).startOf("day");
         const weekDay = parsedDate.get("day");
 
         const possibleHabits = await prisma.habit.findMany({
@@ -208,12 +210,17 @@ export async function appRoutes(app: FastifyInstance) {
             return dayHabit.habitId;
           }) ?? [];
 
+        logger.info(`Possible habits: ${JSON.stringify(possibleHabits)}`);
+        logger.info(`Completed habits: ${JSON.stringify(completedHabits)}`);
+
         const possibleHabitsWithProgress = possibleHabits.map((habit) => {
           const progress = Array(7).fill(0);
+
           habit.dayHabits.forEach((dayHabit: any) => {
             const dayIndex = dayjs(dayHabit.day.date).diff(parsedDate, "day");
             progress[dayIndex] = 1;
           });
+
           return {
             id: habit.id,
             title: habit.title,
