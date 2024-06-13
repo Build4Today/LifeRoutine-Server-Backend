@@ -342,7 +342,7 @@ export async function appRoutes(app: FastifyInstance) {
     const { deviceId } = request.query as GetSummaryQuery;
 
     if (!deviceId) {
-      reply.status(400).send({
+      reply.status(StatusCodes.BAD_REQUEST).send({
         error: "deviceId is required",
       });
       return;
