@@ -14,7 +14,7 @@ npm i
 Start the server
 
 ```console
-npm run start
+npm start
 ```
 
 ### Database Migration
