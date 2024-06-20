@@ -1,6 +1,7 @@
 import { FastifyInstance } from "fastify";
 import rateLimit from "@fastify/rate-limit";
 import cors from "@fastify/cors";
+
 import { appRoutes } from "./routes";
 
 export async function registerPlugins(app: FastifyInstance) {
