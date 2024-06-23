@@ -113,11 +113,10 @@ export async function appRoutes(app: FastifyInstance) {
     async (request, reply) => {
       logger.info("Creating habit");
 
+      const today = dayjs().startOf("day").toDate();
+      const { title, weekDays, deviceId } = request.body as CreateHabitBody;
+
       try {
-        const { title, weekDays, deviceId } = request.body as CreateHabitBody;
-
-        const today = dayjs().startOf("day").toDate();
-
         await prisma.habit.create({
           data: {
             title,
@@ -139,7 +138,7 @@ export async function appRoutes(app: FastifyInstance) {
 
         reply
           .status(StatusCodes.INTERNAL_SERVER_ERROR)
-          .send({ error: "Internal Server Error" });
+          .send({ error: "Error while creating new habit" });
       }
     }
   );
@@ -238,7 +237,7 @@ export async function appRoutes(app: FastifyInstance) {
 
         reply
           .status(StatusCodes.INTERNAL_SERVER_ERROR)
-          .send({ error: "Internal Server Error" });
+          .send({ error: "Error while retrieving day habits" });
       }
     }
   );
@@ -331,7 +330,7 @@ export async function appRoutes(app: FastifyInstance) {
 
         reply
           .status(StatusCodes.INTERNAL_SERVER_ERROR)
-          .send({ error: "Internal Server Error" });
+          .send({ error: "Error while toggling habits" });
       }
     }
   );
