@@ -1,9 +1,9 @@
-import Fastify from "fastify";
+import fastify from "fastify";
 import { config } from "./config";
 import { logger } from "./logger";
 import { registerPlugins } from "./plugins";
 
-const app = Fastify();
+const app = fastify();
 
 (async () => {
   try {
