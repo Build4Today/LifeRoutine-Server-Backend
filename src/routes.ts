@@ -14,7 +14,7 @@ interface CreateHabitBody {
 }
 
 interface GetDayBody {
-  date: Date;
+  date: string;
   deviceId: string;
 }
 
@@ -147,7 +147,7 @@ export async function appRoutes(app: FastifyInstance) {
   const getDayParamsMiddleware = createZodMiddleware(
     z.object({
       deviceId: z.string(),
-      date: z.coerce.date(),
+      date: z.string(),
     })
   );
 
@@ -210,7 +210,9 @@ export async function appRoutes(app: FastifyInstance) {
           const progress = Array(7).fill(0);
           habit.dayHabits.forEach((dayHabit: any) => {
             const dayIndex = dayjs(dayHabit.day.date).diff(parsedDate, "day");
-            progress[dayIndex] = 1;
+            if (dayIndex >= 0 && dayIndex < 7) {
+              progress[dayIndex] = 1;
+            }
           });
           return {
             id: habit.id,
@@ -282,33 +284,12 @@ export async function appRoutes(app: FastifyInstance) {
         });
 
         if (dayHabit) {
-          await prisma.habit.update({
-            where: {
-              id,
-            },
-            data: {
-              streak: {
-                increment: 1,
-              },
-            },
-          });
-        } else {
-          await prisma.habit.update({
-            where: {
-              id,
-            },
-            data: {
-              streak: 0,
-            },
-          });
-        }
-
-        if (dayHabit) {
           await prisma.dayHabit.delete({
             where: {
               id: dayHabit.id,
             },
           });
+          await updateStreak(id, deviceId, false);
         } else {
           await prisma.dayHabit.create({
             data: {
@@ -317,8 +298,14 @@ export async function appRoutes(app: FastifyInstance) {
               deviceId,
             },
           });
+          await updateStreak(id, deviceId, true);
         }
+
+        reply
+          .status(StatusCodes.OK)
+          .send({ message: "Habit toggled successfully" });
       } catch (error) {
+        logger.error(`Error in /habits/toggle route: ${error}`);
         reply
           .status(StatusCodes.INTERNAL_SERVER_ERROR)
           .send({ error: "Error while toggling habits" });
@@ -338,31 +325,69 @@ export async function appRoutes(app: FastifyInstance) {
       return;
     }
 
-    const summary = await prisma.$queryRaw`
-      SELECT
-        D.id,
-        D.date,
-        (
-          SELECT
-            cast(count(*) as float)
-          FROM day_habits DH
-          WHERE DH.day_id = D.id
-        ) as completed,
-        (
-          SELECT
-            cast(count(*) as float)
-          FROM habit_week_days HDW
-          JOIN habits H
-            ON H.id = HDW.habit_id
-          WHERE
-            HDW.week_day = cast(strftime('%w', D.date/1000.0, 'unixepoch') as int)
-            AND H.created_at <= D.date
-            AND H.device_id = ${deviceId}
-        ) as amount
-      FROM days D
-      WHERE D.device_id = ${deviceId}
-    `;
+    try {
+      const summary = await prisma.$queryRaw`
+        SELECT
+          D.id,
+          D.date,
+          (
+            SELECT
+              cast(count(*) as float)
+            FROM day_habits DH
+            WHERE DH.day_id = D.id
+          ) as completed,
+          (
+            SELECT
+              cast(count(*) as float)
+            FROM habit_week_days HDW
+            JOIN habits H
+              ON H.id = HDW.habit_id
+            WHERE
+              HDW.week_day = cast(strftime('%w', D.date/1000.0, 'unixepoch') as int)
+              AND H.created_at <= D.date
+              AND H.device_id = ${deviceId}
+          ) as amount
+        FROM days D
+        WHERE D.device_id = ${deviceId}
+      `;
 
-    return summary;
+      return summary;
+    } catch (error) {
+      logger.error(`Error in /summary route: ${error}`);
+      reply
+        .status(StatusCodes.INTERNAL_SERVER_ERROR)
+        .send({ error: "Error while retrieving summary" });
+    }
+  });
+}
+
+async function updateStreak(
+  habitId: string,
+  deviceId: string,
+  completed: boolean
+) {
+  const habit = await prisma.habit.findUnique({
+    where: { id: habitId },
+    include: { dayHabits: { orderBy: { day: { date: "desc" } }, take: 2 } },
+  });
+
+  if (!habit) return;
+
+  let newStreak = completed ? 1 : 0;
+
+  if (habit.dayHabits.length > 0) {
+    const lastCompletionDate = habit.dayHabits[0].day.date;
+    const yesterday = dayjs().subtract(1, "day").startOf("day").toDate();
+
+    if (dayjs(lastCompletionDate).isSame(yesterday, "day")) {
+      newStreak = completed ? habit.streak + 1 : 0;
+    } else if (completed) {
+      newStreak = 1;
+    }
+  }
+
+  await prisma.habit.update({
+    where: { id: habitId },
+    data: { streak: newStreak },
   });
 }
