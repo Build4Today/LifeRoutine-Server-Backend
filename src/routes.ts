@@ -156,19 +156,18 @@ export async function appRoutes(app: FastifyInstance) {
     { preHandler: getDayParamsMiddleware },
     async (request, reply) => {
       logger.info("Getting day habits");
-
       try {
         const { date, deviceId } = request.body as GetDayBody;
-
-        logger.info(`Date: ${date}, DeviceId: ${deviceId}`);
+        logger.info(`Input Date: ${date}, DeviceId: ${deviceId}`);
 
         const parsedDate = dayjs(date).startOf("day");
+        const unixTimestamp = parsedDate.valueOf();
         const weekDay = parsedDate.get("day");
 
         const possibleHabits = await prisma.habit.findMany({
           where: {
             createdAt: {
-              lte: date,
+              lte: new Date(unixTimestamp),
             },
             weekDays: {
               some: {
@@ -205,21 +204,14 @@ export async function appRoutes(app: FastifyInstance) {
         });
 
         const completedHabits =
-          day?.dayHabits.map((dayHabit) => {
-            return dayHabit.habitId;
-          }) ?? [];
-
-        logger.info(`Possible habits: ${JSON.stringify(possibleHabits)}`);
-        logger.info(`Completed habits: ${JSON.stringify(completedHabits)}`);
+          day?.dayHabits.map((dayHabit) => dayHabit.habitId) ?? [];
 
         const possibleHabitsWithProgress = possibleHabits.map((habit) => {
           const progress = Array(7).fill(0);
-
           habit.dayHabits.forEach((dayHabit: any) => {
             const dayIndex = dayjs(dayHabit.day.date).diff(parsedDate, "day");
             progress[dayIndex] = 1;
           });
-
           return {
             id: habit.id,
             title: habit.title,
@@ -228,13 +220,14 @@ export async function appRoutes(app: FastifyInstance) {
           };
         });
 
-        return {
+        const result = {
           possibleHabits: possibleHabitsWithProgress,
           completedHabits,
         };
-      } catch (error) {
-        logger.error(error);
 
+        return result;
+      } catch (error) {
+        logger.error(`Error in /day route: ${error}`);
         reply
           .status(StatusCodes.INTERNAL_SERVER_ERROR)
           .send({ error: "Error while retrieving day habits" });
@@ -326,8 +319,6 @@ export async function appRoutes(app: FastifyInstance) {
           });
         }
       } catch (error) {
-        logger.error(error);
-
         reply
           .status(StatusCodes.INTERNAL_SERVER_ERROR)
           .send({ error: "Error while toggling habits" });
