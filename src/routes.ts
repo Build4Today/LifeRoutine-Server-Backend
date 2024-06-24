@@ -377,7 +377,9 @@ async function updateStreak(
     },
   });
 
-  if (!habit) return;
+  if (!habit) {
+    return;
+  }
 
   let newStreak = completed ? 1 : 0;
 
