@@ -368,7 +368,13 @@ async function updateStreak(
 ) {
   const habit = await prisma.habit.findUnique({
     where: { id: habitId },
-    include: { dayHabits: { orderBy: { day: { date: "desc" } }, take: 2 } },
+    include: {
+      dayHabits: {
+        orderBy: { day: { date: "desc" } },
+        take: 2,
+        include: { day: true },
+      },
+    },
   });
 
   if (!habit) return;
