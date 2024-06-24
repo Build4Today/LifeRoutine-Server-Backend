@@ -349,6 +349,8 @@ export async function appRoutes(app: FastifyInstance) {
           ) as amount
         FROM days D
         WHERE D.device_id = ${deviceId}
+        ORDER BY D.date DESC
+        LIMIT 100
       `;
 
       return summary;
