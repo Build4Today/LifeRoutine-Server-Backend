@@ -73,7 +73,7 @@ export async function appRoutes(app: FastifyInstance) {
             },
           });
 
-          reply.status(StatusCodes.OK).send({ message: "Device created" });
+          reply.status(StatusCodes.CREATED).send({ message: "Device created" });
         } else {
           await prisma.device.update({
             where: {
