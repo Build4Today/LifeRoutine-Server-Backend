@@ -289,7 +289,7 @@ export async function appRoutes(app: FastifyInstance) {
               id: dayHabit.id,
             },
           });
-          await updateStreak(id, deviceId, false);
+          await updateStreak(id, false);
         } else {
           await prisma.dayHabit.create({
             data: {
@@ -298,7 +298,7 @@ export async function appRoutes(app: FastifyInstance) {
               deviceId,
             },
           });
-          await updateStreak(id, deviceId, true);
+          await updateStreak(id, true);
         }
 
         reply
@@ -365,9 +365,8 @@ export async function appRoutes(app: FastifyInstance) {
 
 async function updateStreak(
   habitId: string,
-  deviceId: string,
   completed: boolean
-) {
+): Promise<void> {
   const habit = await prisma.habit.findUnique({
     where: { id: habitId },
     include: {
